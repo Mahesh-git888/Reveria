@@ -7,7 +7,8 @@ Reveria is a sleek and responsive movie exploration application built with React
 <img width="1641" height="844" alt="image" src="https://github.com/user-attachments/assets/a2116665-585b-4bac-8f57-15b780c222c1" />
 
 
----<img width="1734" height="864" alt="image" src="https://github.com/user-attachments/assets/8a3157d3-cd30-429e-98f8-54145ac045bb" />
+<img width="1753" height="890" alt="image" src="https://github.com/user-attachments/assets/cef103da-a6d6-4ce9-887a-698bb914cf0e" />
+
 
 
 ## Table of Contents
