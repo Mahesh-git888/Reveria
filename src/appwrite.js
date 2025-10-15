@@ -1,18 +1,16 @@
 // appwrite.js
-import { Client, Databases, ID, Query } from "appwrite";
+import { Client, Databases, ID, Query, Permission, Role } from "appwrite";
 
-// Environment variables
+// Environment variables (these are safe to expose for frontend)
 const PROJECT_ID = import.meta.env.VITE_APPWRITE_PROJECT_ID;
 const DATABASE_ID = import.meta.env.VITE_APPWRITE_DATABASE_ID;
 const COLLECTION_ID = import.meta.env.VITE_APPWRITE_COLLECTION_ID;
-const ENDPOINT = "https://syd.cloud.appwrite.io/v1"; // Sydney region
-const API_KEY = import.meta.env.VITE_APPWRITE_API_KEY; // <-- added
+const ENDPOINT = "https://syd.cloud.appwrite.io/v1"; // Appwrite endpoint
 
-// Initialize client with API key for frontend access
+// Initialize client (no API key here — safe for frontend)
 const client = new Client()
   .setEndpoint(ENDPOINT)
-  .setProject(PROJECT_ID)
-  .setKey(API_KEY); // <-- ensures trending movies work on Vercel
+  .setProject(PROJECT_ID);
 
 const databases = new Databases(client);
 
@@ -20,25 +18,37 @@ const databases = new Databases(client);
 // Update search count function
 export const updateSearchCount = async (searchTerm, movie) => {
   try {
+    // 1️ Check if searchTerm exists
     const result = await databases.listDocuments(DATABASE_ID, COLLECTION_ID, [
       Query.equal("searchTerm", searchTerm),
     ]);
 
     if (result.documents.length > 0) {
+      // 2️ If exists, increment count
       const doc = result.documents[0];
       await databases.updateDocument(DATABASE_ID, COLLECTION_ID, doc.$id, {
         count: doc.count + 1,
       });
       console.log(`Updated count for "${searchTerm}"`);
     } else {
-      await databases.createDocument(DATABASE_ID, COLLECTION_ID, ID.unique(), {
-        searchTerm,
-        count: 1,
-        movie_id: movie.id,
-        poster_url: movie.poster_path
-          ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
-          : "./No-Poster.png",
-      });
+      // 3️ If not, create a new document (with public read permission)
+      await databases.createDocument(
+        DATABASE_ID,
+        COLLECTION_ID,
+        ID.unique(),
+        {
+          searchTerm,
+          count: 1,
+          movie_id: movie.id,
+          poster_url: movie.poster_path
+            ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+            : "./No-Poster.png",
+        },
+        [
+          Permission.read(Role.any()), // Public read access
+          Permission.write(Role.any()), // Optional: allow overwrites
+        ]
+      );
       console.log(`Created new entry for "${searchTerm}"`);
     }
   } catch (error) {
@@ -69,7 +79,8 @@ export const testAppwrite = async () => {
       DATABASE_ID,
       COLLECTION_ID,
       ID.unique(),
-      { test: "Hello from React" }
+      { test: "Hello from React" },
+      [Permission.read(Role.any())]
     );
     console.log("Test document created:", res);
   } catch (err) {
